@@ -7,6 +7,7 @@
     <link rel="stylesheet" type="text/css" href="/public/styles/main.css">
     <title>Sup Development Project</title>
 </head>
+<script src="/socket.io/socket.io.js"></script>
 <script defer src="/public/scripts/index.js"></script>
 <body>
     <div id="container">

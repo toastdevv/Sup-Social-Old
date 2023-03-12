@@ -7,7 +7,6 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const session = require('express-session');
-const io = require('socket.io');
 
 const app = express();
 
@@ -25,6 +24,13 @@ app.set('view engine', 'sup');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
+
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
+
+io.on('connection', socket => {
+    console.log('Connected!');
+});
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
@@ -44,6 +50,10 @@ app.use((req, res, next) => {
         req.user = {
             username: req.cookies.username
         }
+    } else {
+        req.user = {
+            username: 'Guest'
+        }
     }
     next();
 })
@@ -51,7 +61,6 @@ app.use((req, res, next) => {
 app.use('/public', express.static(process.cwd() + '/public'));
 
 app.get('/', (req, res) => {
-    console.log(req.user);
     res.render('index', {title: "hey"});
 });
 
@@ -70,6 +79,6 @@ app.post('/cookie/get', (req, res) => {
 });
 
 const PORT = process.env.PORT;
-app.listen(PORT, () => {
+http.listen(PORT, () => {
     console.log('Listening on port ' + PORT + '!');
 });
