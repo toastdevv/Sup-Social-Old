@@ -5,6 +5,7 @@ const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const socketIoCookieParser = require('socket.io-cookie-parser');
 const helmet = require('helmet');
 const session = require('express-session');
 
@@ -28,8 +29,30 @@ app.use(cookieParser());
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
+// MVP socket handling
+
+io.use(socketIoCookieParser());
+
+io.use((socket, next) => {
+    if (socket.request.cookies.username) {
+        socket.request.user = {
+            username: socket.request.cookies.username
+        }
+    } else {
+        socket.request.user = {
+            username: 'Guest'
+        }
+    }
+    next();
+})
+
 io.on('connection', socket => {
-    console.log('Connected!');
+    socket.on('chat message', message => {
+        io.emit('chat message', {
+            message: message.message,
+            username: socket.request.user.username
+        });
+    })
 });
 
 app.use(session({
@@ -65,7 +88,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/cookie/get', (req, res) => {
-    res.cookie('username', req.body.username, { maxAge: 999999999, secure: true, httpOnly: true });
+    res.cookie('username', req.body.username, { maxAge: 99999999999 * 60 * 24, secure: true, httpOnly: true });
     fs.readFile('users.json', (err, data) => {
         let db = JSON.parse(data.toString());
         if (!db.includes({ username: req.body.username })) {
