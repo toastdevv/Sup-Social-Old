@@ -90,8 +90,14 @@ app.get('/', (req, res) => {
 app.post('/cookie/get', (req, res) => {
     res.cookie('username', req.body.username, { maxAge: 99999999999 * 60 * 24, secure: true, httpOnly: true });
     fs.readFile('users.json', (err, data) => {
-        let db = JSON.parse(data.toString());
-        if (!db.includes({ username: req.body.username })) {
+        var db = JSON.parse(data.toString());
+        var userExists = false;
+        for (let i in db) {
+            if (db[i].username == req.body.username) {
+                userExists = true;
+            }
+        }
+        if (!userExists) {
             db.push({
                 username: req.body.username
             });
