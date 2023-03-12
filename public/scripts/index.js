@@ -49,4 +49,5 @@ messageForm.addEventListener('submit', async e => {
 
 socket.on('chat message', message => {
 	addMessage(message);
+	messagesContainer.scrollTop = messagesContainer.offsetHeight;
 });
