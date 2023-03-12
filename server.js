@@ -48,6 +48,14 @@ io.use((socket, next) => {
 
 io.on('connection', socket => {
     socket.on('chat message', message => {
+        fs.readFile('messages.json', (err, data) => {
+            let db = JSON.parse(data.toString());
+            db.push({
+                username: socket.request.user.username,
+                message: message.message
+            });
+            fs.writeFileSync('messages.json', JSON.stringify(db));
+        })
         io.emit('chat message', {
             message: message.message,
             username: socket.request.user.username
@@ -87,6 +95,11 @@ app.get('/', (req, res) => {
     res.render('index', {title: "hey"});
 });
 
+app.get('/messages/get', (req, res) => {
+    let messages = JSON.parse(fs.readFileSync('messages.json').toString());
+    res.json(messages);
+});
+
 app.post('/cookie/get', (req, res) => {
     res.cookie('username', req.body.username, { maxAge: 99999999999 * 60 * 24, secure: true, httpOnly: true });
     fs.readFile('users.json', (err, data) => {
@@ -95,6 +108,7 @@ app.post('/cookie/get', (req, res) => {
         for (let i in db) {
             if (db[i].username == req.body.username) {
                 userExists = true;
+                break;
             }
         }
         if (!userExists) {

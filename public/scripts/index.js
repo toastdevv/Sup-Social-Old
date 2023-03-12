@@ -22,6 +22,21 @@ function addMessage(message) {
 	messagesContainer.appendChild(messageDiv);
 }
 
+document.addEventListener('DOMContentLoaded', async e => {
+	let messagesReq = await fetch('/messages/get', {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json'
+		}
+	});
+
+	let messages = await messagesReq.json();
+
+	messages.forEach(message => {
+		addMessage(message);
+	})
+})
+
 getCookieForm.addEventListener("submit", async (e) => {
 	e.preventDefault();
 

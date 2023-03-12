@@ -1,4 +1,4 @@
 .env
 node_modules/
-users.json
-messages.json
+/users.json
+/messages.json
