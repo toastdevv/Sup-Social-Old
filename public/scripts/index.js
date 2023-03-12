@@ -1,0 +1,17 @@
+let getCookieForm = document.getElementById("username-cookie-form");
+let usernameField = document.getElementById("username-field");
+
+getCookieForm.addEventListener("submit", async (e) => {
+	e.preventDefault();
+
+	await fetch("/cookie/get", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			username: "" + usernameField.value,
+		}),
+	});
+	usernameField.value = "";
+});

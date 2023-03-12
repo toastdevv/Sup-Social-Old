@@ -8,7 +8,8 @@ module.exports = (app, helmet) => {
         hsts: { maxAge: 90*24*60*60 },
         contentSecurityPolicy: {
             directives: {
-                defaultSrc: ["'self'"]
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'","unpkg.com"]
             }
         }
     }))
