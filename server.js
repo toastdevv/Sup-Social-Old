@@ -120,11 +120,11 @@ app.use((req, res, next) => {
 app.use('/public', express.static(process.cwd() + '/public'));
 
 app.get('/', (req, res) => {
-    res.render('index');
+    res.render('index', {username: req.user.username});
 });
 
 app.get('/chat/:username', (req, res) => {
-    res.render('chat');
+    res.render('chat', {username: req.params.username});
 })
 
 app.get('/messages/get/:dm_name', (req, res) => {
@@ -138,7 +138,7 @@ app.get('/users/get', (req, res) => {
 });
 
 app.post('/cookie/get', (req, res) => {
-    res.cookie('username', req.body.username, { maxAge: 99999999999 * 60 * 24, secure: true, httpOnly: true });
+    res.cookie('username', req.body.username, { maxAge: 99999999999 * 60 * 24, httpOnly: true });
     fs.readFile('users.json', (err, data) => {
         var db = JSON.parse(data.toString());
         var userExists = false;
@@ -156,6 +156,10 @@ app.post('/cookie/get', (req, res) => {
         }
         res.send('success');
     });
+});
+
+app.get('/community/centers', (req, res) => {
+    res.render('community_centers');
 });
 
 const PORT = process.env.PORT;
