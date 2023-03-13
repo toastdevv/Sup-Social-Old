@@ -6,7 +6,7 @@ module.exports = (app, fs) => {
         return html.replace(/{.+}/g,'');
     }
 
-    app.engine('sup', (filePath, options, cb) => {
+    app.engine('html', (filePath, options, cb) => {
         fs.readFile(filePath, (err, data) => {
             if (err) return console.log(err);
             var html = data.toString();

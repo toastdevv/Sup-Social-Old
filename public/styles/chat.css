@@ -1,0 +1,17 @@
+#container {
+    height: 100dvh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#messages-container {
+    overflow-y: visible;
+    overflow-x: hidden;
+    height: 27rem;
+    width: 50%;
+    border: 2px solid black;
+    margin: 1rem;
+}

@@ -1,41 +1,44 @@
 let getCookieForm = document.getElementById("username-cookie-form");
 let usernameField = document.getElementById("username-field");
 
-let messageForm = document.getElementById('message-form');
-let messageField = document.getElementById('message-field');
+let dmsContainer = document.getElementById('dms');
 
-let messagesContainer = document.getElementById('messages-container');
+function addDm(user) {
+    let dmDiv = document.createElement('div');
+    dmDiv.className = 'dm';
 
-/*global io*/
-const socket = io();
+    let dmName = document.createElement('h3');
+    dmName.className = 'dm-name';
+    dmName.innerText = user.username;
 
-function addMessage(message) {
-	let messageDiv = document.createElement('div');
-	messageDiv.classList.add('message');
+    let dmBtn = document.createElement('button');
+    dmBtn.className = 'dm-btn';
+    dmBtn.dataset.user = user.username;
+    dmBtn.addEventListener('click', e => {
+        window.location.replace('/chat/' + user.username);
+    });
+    dmBtn.innerText = 'Chat!';
 
-	let messageText = document.createElement('p');
-	messageText.style.fontSize = '1.3em';
-	messageText.innerText = message.username + ': ' + message.message;
+    dmDiv.appendChild(dmName);
+    dmDiv.appendChild(dmBtn);
 
-	messageDiv.appendChild(messageText);
-
-	messagesContainer.appendChild(messageDiv);
+    dmsContainer.appendChild(dmDiv);
 }
 
 document.addEventListener('DOMContentLoaded', async e => {
-	let messagesReq = await fetch('/messages/get', {
-		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json'
-		}
-	});
+    let usersReq = await fetch('/users/get', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
 
-	let messages = await messagesReq.json();
+    let users = await usersReq.json();
 
-	messages.forEach(message => {
-		addMessage(message);
-	})
-})
+    users.forEach(user => {
+        addDm(user);
+    });
+});
 
 getCookieForm.addEventListener("submit", async (e) => {
 	e.preventDefault();
@@ -49,20 +52,9 @@ getCookieForm.addEventListener("submit", async (e) => {
 			username: "" + usernameField.value,
 		}),
 	});
+
 	usernameField.value = "";
-});
 
-messageForm.addEventListener('submit', async e => {
-	e.preventDefault();
+    window.location.href = window.location.href;
 
-	let message = '' + messageField.value;
-
-	messageField.value = '';
-
-	socket.emit('chat message', { message: message });
-});
-
-socket.on('chat message', message => {
-	addMessage(message);
-	messagesContainer.scrollTop = messagesContainer.offsetHeight;
 });

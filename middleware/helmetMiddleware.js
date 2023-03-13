@@ -5,11 +5,16 @@ module.exports = (app, helmet) => {
         xssFilter: true,
         noSniff: true,
         ieNoOpen: true,
-        hsts: { maxAge: 90*24*60*60 },
-        contentSecurityPolicy: {
-            directives: {
-                defaultSrc: ["'self'"]
+         contentSecurityPolicy: {
+           directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'"],
+                styleSrc: ["'self'"]
             }
-        }
+        },
+        crossOriginOpenerPolicy: { policy: "unsafe-none" }, // Remove in production
+        hsts: false,
+        expectCt: false,
+        crossOriginEmbedderPolicy: false
     }))
 }
