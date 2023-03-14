@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async e => {
 createRoomForm.addEventListener('submit', async e => {
     e.preventDefault();
 
+
     await fetch('/community/centers/rooms/create', {
         method: 'POST',
         headers: {
