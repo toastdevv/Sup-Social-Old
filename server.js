@@ -188,15 +188,15 @@ app.get('/community/centers', (req, res) => {
     res.render('ccs');
 });
 
-app.get('/community/centers/:cc_name', (req, res) => {
+app.get('/community/centers/cc/:cc_name', (req, res) => {
     res.render('cc_page', {name: req.params.cc_name});
 });
 
-app.get('/community/centers/:cc_name/:room_name', (req, res) => {
+app.get('/community/centers/cc/:cc_name/:room_name', (req, res) => {
     res.render('room', {cc_name: req.params.cc_name, room_name: req.params.room_name});
 });
 
-app.get('/community/centers/get', (req, res) => {
+app.get('/community/centers/data/get', (req, res) => {
     let ccs = JSON.parse(fs.readFileSync('ccs.json').toString());
     res.json(ccs);
 });
@@ -206,7 +206,7 @@ app.get('/community/centers/:cc_name/rooms/get', (req, res) => {
     res.json(rooms);
 });
 
-app.post('/community/centers/create', (req, res) => {
+app.post('/community/centers/new/create', (req, res) => {
     fs.readFile('ccs.json', (err, data) => {
         var db = JSON.parse(data.toString());
         var ccExists = false;
@@ -258,7 +258,7 @@ app.post('/community/centers/room/create', (req, res) => {
     });
 });
 
-app.delete('/community/centers/delete', (req, res) => {
+app.delete('/community/centers/data/delete', (req, res) => {
     fs.readFile('ccs.json', (err, data) => {
         var db = JSON.parse(data.toString());
         for (let i in db) {
