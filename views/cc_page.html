@@ -9,6 +9,18 @@
 </head>
 <script defer src="/public/scripts/cc_page.js"></script>
 <body>
-    
+    <h1>{cc_name}</h1>
+    <h1>Rooms</h1>
+    <div id="container">
+        <div id="rooms">
+
+        </div>
+    </div>
+    <hr>
+    <form id="create-room-form">
+        <label for="room_name">Create new Room</label>
+        <input type="text" name="room_name" id="room-name-field" placeholder="Room name">
+        <button type="submit">Create</button>
+    </form>
 </body>
 </html>

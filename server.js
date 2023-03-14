@@ -189,7 +189,7 @@ app.get('/community/centers', (req, res) => {
 });
 
 app.get('/community/centers/cc/:cc_name', (req, res) => {
-    res.render('cc_page', {name: req.params.cc_name});
+    res.render('cc_page', {cc_name: req.params.cc_name});
 });
 
 app.get('/community/centers/cc/:cc_name/:room_name', (req, res) => {
@@ -201,8 +201,9 @@ app.get('/community/centers/data/get', (req, res) => {
     res.json(ccs);
 });
 
-app.get('/community/centers/:cc_name/rooms/get', (req, res) => {
-    let rooms = JSON.parse(fs.readFileSync('ccs.json').toString()).filter(i => {i.name == req.params.cc_name})[0].rooms;
+app.get('/community/centers/cc/:cc_name/data/rooms/get', (req, res) => {
+    let rooms = JSON.parse(fs.readFileSync('ccs.json').toString()).filter(i => {i.name == req.params.cc_name});
+    console.log(rooms);
     res.json(rooms);
 });
 
@@ -229,17 +230,17 @@ app.post('/community/centers/new/create', (req, res) => {
     });
 });
 
-app.post('/community/centers/room/create', (req, res) => {
+app.post('/community/centers/rooms/create', (req, res) => {
     fs.readFile('ccs.json', (err, data) => {
         var db = JSON.parse(data.toString());
         var channelExists = false;
-        var temp = [0,0];
+        var temp = 0;
         for (let i in db) {
             if (db[i].name == req.body.cc_name) {
                 for (let j in db[i].rooms) {
                     if (db[i].rooms[j].name == req.body.room_name) {
                         channelExists = true;
-                        temp = [i, j];
+                        temp = 0 + i;
                         break;
                     }
                 }
@@ -247,7 +248,7 @@ app.post('/community/centers/room/create', (req, res) => {
             }
         }
         if (!channelExists) {
-            db[temp[0]].rooms[temp[1]].push({
+            db[temp].rooms.push({
                 name: req.body.room_name
             });
             fs.writeFileSync('ccs.json', JSON.stringify(db));
@@ -282,7 +283,7 @@ app.delete('/community/centers/data/delete', (req, res) => {
     res.send('success');
 });
 
-app.delete('/community/centers/room/delete', (req, res) => {
+app.delete('/community/centers/rooms/delete', (req, res) => {
     fs.readFile('ccs.json', (err, data) => {
         var db = JSON.parse(data.toString());
         for (let i in db) {
