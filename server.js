@@ -202,8 +202,7 @@ app.get('/community/centers/data/get', (req, res) => {
 });
 
 app.get('/community/centers/cc/:cc_name/data/rooms/get', (req, res) => {
-    let rooms = JSON.parse(fs.readFileSync('ccs.json').toString()).filter(i => {i.name == req.params.cc_name});
-    console.log(rooms);
+    let rooms = JSON.parse(fs.readFileSync('ccs.json').toString()).filter(i => {return i.name == req.params.cc_name})[0];
     res.json(rooms);
 });
 

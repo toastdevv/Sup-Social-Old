@@ -9,6 +9,13 @@
 </head>
 <script defer src="/public/scripts/room.js"></script>
 <body>
-    
+    <div id="container">
+        <h1>{username}</h1>
+        <div id="messages-container"></div>
+        <form id="message-form">
+            <input type="text" name="message" id="message-field" placeholder="Enter message">
+            <button type="submit">Send!</button>
+        </form>
+    </div>
 </body>
 </html>
