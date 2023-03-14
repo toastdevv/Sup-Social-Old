@@ -5,14 +5,13 @@ let messagesContainer = document.getElementById('messages-container');
 
 let locTemp = window.location.href.split('/');
 
-let dmName = locTemp[locTemp.length - 1];
-
-console.log(dmName);
+let ccName = locTemp[locTemp.length - 2];
+let roomName = locTemp[locTemp.length - 1];
 
 /*global io*/
 const socket = io();
 
-socket.emit('room join', { dmName });
+socket.emit('room join', { cc_name: ccName, room_name: roomName });
 
 function addMessage(message) {
 	let messageDiv = document.createElement('div');
@@ -30,7 +29,7 @@ function addMessage(message) {
 }
 
 document.addEventListener('DOMContentLoaded', async e => {
-	let messagesReq = await fetch('/messages/get/' + dmName, {
+	let messagesReq = await fetch('/community/centers/cc/' + ccName + '/' + roomName + '/messages/get', {
 		method: 'GET',
 		headers: {
 			'Content-Type': 'application/json'
@@ -52,9 +51,9 @@ messageForm.addEventListener('submit', async e => {
 	messageField.value = '';
 
 
-	socket.emit('dm message', { message: message, dmName: dmName });
+	socket.emit('room message', { message: message, cc_name: ccName, room_name: roomName });
 });
 
-socket.on('dm message', message => {
+socket.on('room message', message => {
 	addMessage(message);
 });

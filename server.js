@@ -145,6 +145,8 @@ app.use((req, res, next) => {
 
 app.use('/public', express.static(process.cwd() + '/public'));
 
+// Route handling
+
 app.get('/', (req, res) => {
     res.render('index', {username: req.user.username});
 });
@@ -196,6 +198,12 @@ app.get('/community/centers/cc/:cc_name/:room_name', (req, res) => {
     res.render('room', {cc_name: req.params.cc_name, room_name: req.params.room_name});
 });
 
+app.get('/community/centers/cc/:cc_name/:room_name/messages/get', (req, res) => {
+    let messages = JSON.parse(fs.readFileSync('cc_messages.json').toString()).filter(i => {return i.toCc == req.params.cc_name && i.toRoom == req.params.room_name});
+    console.log(messages);
+    res.json(messages);
+});
+
 app.get('/community/centers/data/get', (req, res) => {
     let ccs = JSON.parse(fs.readFileSync('ccs.json').toString());
     res.json(ccs);
@@ -203,6 +211,7 @@ app.get('/community/centers/data/get', (req, res) => {
 
 app.get('/community/centers/cc/:cc_name/data/rooms/get', (req, res) => {
     let rooms = JSON.parse(fs.readFileSync('ccs.json').toString()).filter(i => {return i.name == req.params.cc_name})[0];
+    console.log(rooms);
     res.json(rooms);
 });
 
