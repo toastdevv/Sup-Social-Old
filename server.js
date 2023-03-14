@@ -47,7 +47,7 @@ io.use((socket, next) => {
     next();
 })
 
-function compareUsernames (socket, message) {
+function makeDmName(socket, message) {
     let username = socket.request.user.username;
     let to = message.dmName;
     let first = [username, to].sort(function(a, b){
@@ -63,30 +63,55 @@ function compareUsernames (socket, message) {
     return first[0] + '-' + last[0];
 }
 
+function makeRoomName(message) {
+    return message.cc_name + '-' + message.room_name;
+}
+
 io.on('connection', socket => {
-    socket.on('join', message => {
-        socket.join(compareUsernames(socket, message));
-        console.log(compareUsernames(socket, message));
+    socket.on('dm join', message => {
+        socket.join(makeDmName(socket, message));
+        console.log(makeDmName(socket, message));
     });
-    socket.on('chat message', message => {
+    socket.on('room join', message => {
+        socket.join(makeRoomName(message));
+        console.log(makeRoomName(message));
+    });
+    socket.on('dm message', message => {
         let username = socket.request.user.username;
-        let from = username;
         let to = message.dmName;
         let msg = message.message;
         fs.readFile('messages.json', (err, data) => {
-            if (err) return console.log(err);
             let db = JSON.parse(data.toString());
             db.push({
                 username: username,
                 message: msg,
-                from: from,
                 to: to
             });
-            io.in(compareUsernames(socket, message)).emit('chat message', {
+            io.in(makeDmName(socket, message)).emit('dm message', {
                 message: msg,
                 username: username
             });
             fs.writeFileSync('messages.json', JSON.stringify(db));
+        });
+    });
+    socket.on('room message', message => {
+        let username = socket.request.user.username;
+        let toCc = message.cc_name;
+        let toRoom = message.room_name;
+        let msg = message.message;
+        fs.readFile('cc_messages.json', (err, data) => {
+            let db = JSON.parse(data.toString());
+            db.push({
+                username: username,
+                message: msg,
+                toCc: toCc,
+                toRoom: toRoom
+            });
+            io.in(makeRoomName(message)).emit('room message', {
+                message: msg,
+                username: username
+            });
+            fs.writeFileSync('cc_messages.json', JSON.stringify(db));
         });
     });
 });
@@ -100,7 +125,8 @@ app.use(session({
 }));
 
 app.use((req, res, next) => {
-    console.log(req.ip + ' - ' + req.method + ' ' + req.path);
+    let date = new Date();
+    console.log(`${date.getHours()}:${date.getMinutes()}:${date.getSeconds()} ${req.ip} - ${req.method} ${req.path}`);
     next();
 });
 
@@ -128,7 +154,7 @@ app.get('/chat/:username', (req, res) => {
 })
 
 app.get('/messages/get/:dm_name', (req, res) => {
-    let messages = JSON.parse(fs.readFileSync('messages.json').toString()).filter(i => {return (i.from == req.params.dm_name && i.to == req.user.username) || (i.to == req.params.dm_name && i.from == req.user.username)});
+    let messages = JSON.parse(fs.readFileSync('messages.json').toString()).filter(i => {return (i.username == req.params.dm_name && i.to == req.user.username) || (i.to == req.params.dm_name && i.username == req.user.username)});
     res.json(messages);
 });
 
@@ -159,7 +185,131 @@ app.post('/cookie/get', (req, res) => {
 });
 
 app.get('/community/centers', (req, res) => {
-    res.render('community_centers');
+    res.render('ccs');
+});
+
+app.get('/community/centers/:cc_name', (req, res) => {
+    res.render('cc_page', {name: req.params.cc_name});
+});
+
+app.get('/community/centers/:cc_name/:room_name', (req, res) => {
+    res.render('room', {cc_name: req.params.cc_name, room_name: req.params.room_name});
+});
+
+app.get('/community/centers/get', (req, res) => {
+    let ccs = JSON.parse(fs.readFileSync('ccs.json').toString());
+    res.json(ccs);
+});
+
+app.get('/community/centers/:cc_name/rooms/get', (req, res) => {
+    let rooms = JSON.parse(fs.readFileSync('ccs.json').toString()).filter(i => {i.name == req.params.cc_name})[0].rooms;
+    res.json(rooms);
+});
+
+app.post('/community/centers/create', (req, res) => {
+    fs.readFile('ccs.json', (err, data) => {
+        var db = JSON.parse(data.toString());
+        var ccExists = false;
+        for (let i in db) {
+            if (db[i].name == req.body.cc_name) {
+                ccExists = true;
+                break;
+            }
+        }
+        if (!ccExists) {
+            db.push({
+                name: req.body.cc_name,
+                rooms: []
+            });
+            fs.writeFileSync('ccs.json', JSON.stringify(db));
+            res.send('success');
+        } else {
+            res.send('exists');
+        }
+    });
+});
+
+app.post('/community/centers/room/create', (req, res) => {
+    fs.readFile('ccs.json', (err, data) => {
+        var db = JSON.parse(data.toString());
+        var channelExists = false;
+        var temp = [0,0];
+        for (let i in db) {
+            if (db[i].name == req.body.cc_name) {
+                for (let j in db[i].rooms) {
+                    if (db[i].rooms[j].name == req.body.room_name) {
+                        channelExists = true;
+                        temp = [i, j];
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        if (!channelExists) {
+            db[temp[0]].rooms[temp[1]].push({
+                name: req.body.room_name
+            });
+            fs.writeFileSync('ccs.json', JSON.stringify(db));
+            res.send('success');
+        } else {
+            res.send('exists');
+        }
+    });
+});
+
+app.delete('/community/centers/delete', (req, res) => {
+    fs.readFile('ccs.json', (err, data) => {
+        var db = JSON.parse(data.toString());
+        for (let i in db) {
+            if (db[i].name == req.body.cc_name) {
+                db.splice(i,1);
+                break;
+            }
+        }
+        fs.writeFileSync('ccs.json', JSON.stringify(db));
+    });
+    fs.readFile('cc_messages.json', (err, data) => {
+        var db = JSON.parse(data.toString());
+        for (let i in db) {
+            if (db[i].toCc == req.body.cc_name) {
+                db.splice(i,1);
+                break;
+            }
+        }
+        fs.writeFileSync('cc_messages.json', JSON.stringify(db));
+    });
+    res.send('success');
+});
+
+app.delete('/community/centers/room/delete', (req, res) => {
+    fs.readFile('ccs.json', (err, data) => {
+        var db = JSON.parse(data.toString());
+        for (let i in db) {
+            if (db[i].name == req.body.cc_name) {
+                for (let j in db[i].rooms) {
+                    if (db[i].rooms[j].name == req.body.room_name) {
+                        db[i].rooms.splice(j,1);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        fs.writeFileSync('ccs.json', JSON.stringify(db));
+    });
+    fs.readFile('cc_messages.json', (err, data) => {
+        var db = JSON.parse(data.toString());
+        for (let i in db) {
+            if (db[i].toCc == req.body.cc_name) {
+                if (db[i].toRoom == req.body.room_name) {
+                    db.splice(i,1);
+                }
+            }
+        }
+        fs.writeFileSync('cc_messages.json', JSON.stringify(db));
+    });
+    res.send('success');
 });
 
 const PORT = process.env.PORT;

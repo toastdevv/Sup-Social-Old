@@ -12,7 +12,7 @@ console.log(dmName);
 /*global io*/
 const socket = io();
 
-socket.emit('join', { dmName });
+socket.emit('dm join', { dmName });
 
 function addMessage(message) {
 	let messageDiv = document.createElement('div');
@@ -52,9 +52,9 @@ messageForm.addEventListener('submit', async e => {
 	messageField.value = '';
 
 
-	socket.emit('chat message', { message: message, dmName: dmName });
+	socket.emit('dm message', { message: message, dmName: dmName });
 });
 
-socket.on('chat message', message => {
+socket.on('dm message', message => {
 	addMessage(message);
 });
