@@ -3,15 +3,30 @@ require('dotenv').config();
 const fs = require('fs');
 
 const express = require('express');
+const session = require('express-session');
+
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const socketIoCookieParser = require('socket.io-cookie-parser');
-const helmet = require('helmet');
-const session = require('express-session');
+
+// const helmet = require('helmet');
+
+const passport = require('passport');
+const passportSocketIo = require('passport.socketio');
+
+const bcrypt = require('bcrypt');
+
+const mongoose = require('mongoose');
+
+const MongoStore = require('connect-mongo')(session);
+const URI = process.env.MONGO_URI;
+const store = new MongoStore({ url: URI });
 
 const app = express();
 
 app.disable('x-powered-by');
+
+// Security Middleware
 
 // let helmetMiddleware = require('./middleware/helmetMiddleware');
 // helmetMiddleware(app, helmet);
@@ -30,99 +45,53 @@ app.use(cookieParser());
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
-// MVP socket handling
+// Socket Handling
 
 io.use(socketIoCookieParser());
 
-io.use((socket, next) => {
-    if (socket.request.cookies.username) {
-        socket.request.user = {
-            username: socket.request.cookies.username
-        }
-    } else {
-        socket.request.user = {
-            username: 'Guest'
-        }
-    }
-    next();
-})
+const socketHandler = require('./socket/socketHandler');
+socketHandler(io);
 
-function makeDmName(socket, message) {
-    let username = socket.request.user.username;
-    let to = message.dmName;
-    let first = [username, to].sort(function(a, b){
-        if(a < b) { return -1; }
-        if(a > b) { return 1; }
-        return 0;
-    });
-    let last = [username, to].sort(function(a, b){
-        if(a > b) { return -1; }
-        if(a < b) { return 1; }
-        return 0;
-    });
-    return first[0] + '-' + last[0];
-}
-
-function makeRoomName(message) {
-    return message.cc_name + '-' + message.room_name;
-}
-
-io.on('connection', socket => {
-    socket.on('dm join', message => {
-        socket.join(makeDmName(socket, message));
-        console.log(makeDmName(socket, message));
-    });
-    socket.on('room join', message => {
-        socket.join(makeRoomName(message));
-        console.log(makeRoomName(message));
-    });
-    socket.on('dm message', message => {
-        let username = socket.request.user.username;
-        let to = message.dmName;
-        let msg = message.message;
-        fs.readFile('messages.json', (err, data) => {
-            let db = JSON.parse(data.toString());
-            db.push({
-                username: username,
-                message: msg,
-                to: to
-            });
-            io.in(makeDmName(socket, message)).emit('dm message', {
-                message: msg,
-                username: username
-            });
-            fs.writeFileSync('messages.json', JSON.stringify(db));
-        });
-    });
-    socket.on('room message', message => {
-        let username = socket.request.user.username;
-        let toCc = message.cc_name;
-        let toRoom = message.room_name;
-        let msg = message.message;
-        fs.readFile('cc_messages.json', (err, data) => {
-            let db = JSON.parse(data.toString());
-            db.push({
-                username: username,
-                message: msg,
-                toCc: toCc,
-                toRoom: toRoom
-            });
-            io.in(makeRoomName(message)).emit('room message', {
-                message: msg,
-                username: username
-            });
-            fs.writeFileSync('cc_messages.json', JSON.stringify(db));
-        });
-    });
-});
+// Required Session Middleware
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
-    key: 'express.sid',
+    key: 'sessionId',
     resave: true,
     saveUninitialized: true,
-    cookie: { secure: true, httpOnly: true }
+    store: store,
+    cookie: { secure: false }
 }));
+
+// Passport Handling
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+io.use(passportSocketIo.authorize({
+    cookieParser: cookieParser,
+    key: 'sessionId',
+    secret: process.env.SESSION_SECRET,
+    store: store,
+    success: onAuthorizeSuccess,
+    fail: onAuthorizeFail
+}));
+
+function onAuthorizeSuccess(data, accept) {
+    console.log('Connected Successfully');
+    accept(null, true);
+};
+
+function onAuthorizeFail(data, message, error, accept) {
+    if (error) throw new Error(message);
+    console.log('Connection Failure: ', message);
+    accept(null, false);
+}
+
+// const auth = require('/auth/auth');
+// auth(bcrypt, passport, User);
+
+// Development Debugging Middleware
 
 app.use((req, res, next) => {
     let date = new Date();
@@ -130,30 +99,41 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use((req, res, next) => {
-    if (req.cookies.username) {
-        req.user = {
-            username: req.cookies.username
-        }
-    } else {
-        req.user = {
-            username: 'Guest'
-        }
-    }
-    next();
-})
-
 app.use('/public', express.static(process.cwd() + '/public'));
+
+// DB connection
+
+mongoose.connect(URI, { useNewUrlParser: true, useUnifiedTopology: true });
+
+// Schemas
+
+const { Schema } = mongoose;
+
+const userSchema = require('./db_schemas/users')(Schema);
+const dmSchema = require('./db_schemas/dms')(Schema);
+const groupSchema = require('./db_schemas/groups')(Schema);
+const ccSchema = require('./db_schemas/ccs')(Schema);
+const roomSchema = require('./db_schemas/room')(Schema);
+
+const User = mongoose.model('User', userSchema);
+const DM = mongoose.model('DM', dmSchema);
+const Group = mongoose.model('Group', groupSchema);
+const CC = mongoose.model('CC', ccSchema);
+const Room = mongoose.model('Room', roomSchema);
 
 // Route handling
 
+// Later import the routes here, then make the required changes client side
+
+/*
 app.get('/', (req, res) => {
-    res.render('index', {username: req.user.username});
+    res.render('dms', {username: req.user.username});
 });
 
 app.get('/chat/:username', (req, res) => {
     res.render('chat', {username: req.params.username});
 })
+*/
 
 app.get('/messages/get/:dm_name', (req, res) => {
     let messages = JSON.parse(fs.readFileSync('messages.json').toString()).filter(i => {return (i.username == req.params.dm_name && i.to == req.user.username) || (i.to == req.params.dm_name && i.username == req.user.username)});
