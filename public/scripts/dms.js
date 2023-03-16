@@ -1,6 +1,3 @@
-let getCookieForm = document.getElementById("username-cookie-form");
-let usernameField = document.getElementById("username-field");
-
 let dmsContainer = document.getElementById('dms');
 
 function addDm(user) {
@@ -13,9 +10,9 @@ function addDm(user) {
 
     let dmBtn = document.createElement('button');
     dmBtn.className = 'dm-btn';
-    dmBtn.dataset.user = user.username;
+    dmBtn.dataset.userId = user._id;
     dmBtn.addEventListener('click', e => {
-        window.location.replace('/chat/' + user.username);
+        window.location.replace('/dms/chat/' + e.target.dataset.userId);
     });
     dmBtn.innerText = 'Chat!';
 
@@ -38,23 +35,4 @@ document.addEventListener('DOMContentLoaded', async e => {
     users.forEach(user => {
         addDm(user);
     });
-});
-
-getCookieForm.addEventListener("submit", async (e) => {
-	e.preventDefault();
-
-	await fetch("/cookie/get", {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			username: "" + usernameField.value,
-		}),
-	});
-
-	usernameField.value = "";
-
-    window.location.href = window.location.href;
-
 });

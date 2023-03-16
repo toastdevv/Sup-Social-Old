@@ -9,20 +9,20 @@ function addRoom(cc, room) {
 
     let roomName = document.createElement('h3');
     roomName.className = 'room-name';
-    roomName.innerText = room.name;
+    roomName.innerText = room.room_name;
 
     let roomBtn = document.createElement('button');
     roomBtn.className = 'room-btn';
     roomBtn.innerText = 'Join!';
-    roomBtn.dataset.roomName = room.name;
+    roomBtn.dataset.roomId = room._id;
     roomBtn.addEventListener('click', e => {
-        window.location.replace('/community/centers/cc/' + cc.name + '/' + room.name);
+        window.location.replace('/community/centers/rooms/' + cc._id + '/' + e.target.dataset.roomId);
     });
 
     let roomRemoveBtn = document.createElement('button');
     roomRemoveBtn.className = 'room-rm-btn';
     roomRemoveBtn.innerText = 'Remove';
-    roomRemoveBtn.dataset.roomName = room.name;
+    roomRemoveBtn.dataset.roomId = room._id;
     roomRemoveBtn.addEventListener('click', async e => {
         await fetch('/community/centers/rooms/delete', {
             method: 'DELETE',
@@ -30,8 +30,8 @@ function addRoom(cc, room) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                cc_name: cc.name,
-                room_name: roomRemoveBtn.dataset.roomName
+                cc_id: cc._id,
+                room_id: e.target.dataset.roomId
             })
         });
         window.location.reload();
@@ -54,7 +54,9 @@ document.addEventListener('DOMContentLoaded', async e => {
 
     let roomResp = await roomReq.json();
 
-    createRoomForm.dataset.ccName = roomResp.name;
+    createRoomForm.dataset.ccId = roomResp._id;
+
+    console.log(roomResp);
 
     roomResp.rooms.forEach(room => {
         addRoom(roomResp, room);
@@ -71,11 +73,11 @@ createRoomForm.addEventListener('submit', async e => {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            cc_name: e.target.dataset.ccName,
+            cc_id: e.target.dataset.ccId,
             room_name: '' + roomField.value
         })
     });
 
     window.location.reload();
 
-})
+});

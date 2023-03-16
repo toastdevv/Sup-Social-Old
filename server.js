@@ -14,13 +14,14 @@ const socketIoCookieParser = require('socket.io-cookie-parser');
 const passport = require('passport');
 const passportSocketIo = require('passport.socketio');
 
-const bcrypt = require('bcrypt');
-
 const mongoose = require('mongoose');
 
-const MongoStore = require('connect-mongo')(session);
+const MongoStore = require('connect-mongo');
 const URI = process.env.MONGO_URI;
-const store = new MongoStore({ url: URI });
+const store = MongoStore.create({
+                mongoUrl: process.env.MONGO_URI,
+                mongooseConnection: mongoose.connection
+            });
 
 const app = express();
 
@@ -45,18 +46,13 @@ app.use(cookieParser());
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
-// Socket Handling
-
 io.use(socketIoCookieParser());
-
-const socketHandler = require('./socket/socketHandler');
-socketHandler(io);
 
 // Required Session Middleware
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
-    key: 'sessionId',
+    key: 'session.sid',
     resave: true,
     saveUninitialized: true,
     store: store,
@@ -70,7 +66,7 @@ app.use(passport.session());
 
 io.use(passportSocketIo.authorize({
     cookieParser: cookieParser,
-    key: 'sessionId',
+    key: 'session.sid',
     secret: process.env.SESSION_SECRET,
     store: store,
     success: onAuthorizeSuccess,
@@ -109,195 +105,90 @@ mongoose.connect(URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 const { Schema } = mongoose;
 
-const userSchema = require('./db_schemas/users')(Schema);
-const dmSchema = require('./db_schemas/dms')(Schema);
-const groupSchema = require('./db_schemas/groups')(Schema);
-const ccSchema = require('./db_schemas/ccs')(Schema);
-const roomSchema = require('./db_schemas/room')(Schema);
+const userSchema = require('./db_schemas/users')(mongoose, Schema);
+const dmSchema = require('./db_schemas/dms')(mongoose, Schema);
+const groupSchema = require('./db_schemas/groups')(mongoose, Schema);
+const ccSchema = require('./db_schemas/ccs')(mongoose, Schema);
 
 const User = mongoose.model('User', userSchema);
 const DM = mongoose.model('DM', dmSchema);
 const Group = mongoose.model('Group', groupSchema);
 const CC = mongoose.model('CC', ccSchema);
-const Room = mongoose.model('Room', roomSchema);
+
+// Local Authentication Strategy
+
+const localAuth = require('./auth/auth');
+localAuth(User);
+
+// Socket Handling
+
+const socketHandler = require('./socket/socketHandler');
+socketHandler(io, CC, DM);
 
 // Route handling
 
-// Later import the routes here, then make the required changes client side
+const ensureAuth = require('./utilities/ensureAuth');
 
-/*
-app.get('/', (req, res) => {
-    res.render('dms', {username: req.user.username});
-});
+const indexRoute = require('./routes/index')();
+const loginRoute = require('./routes/login')();
+const logoutRoute = require('./routes/logout')();
+const registerRoute = require('./routes/register')(User);
+const usersRoute = require('./routes/users')(User);
+const dmsRoute = require('./routes/DMs')(User, DM);
+const groupsRoute = require('./routes/groups')(Group);
+const ccsRoute = require('./routes/CCs')(CC);
+const roomsRoute = require('./routes/rooms')(CC);
 
-app.get('/chat/:username', (req, res) => {
-    res.render('chat', {username: req.params.username});
-})
-*/
+app.use('/', indexRoute);
+app.use('/login', loginRoute);
+app.use('/register', registerRoute);
+app.use('/logout', ensureAuth, logoutRoute);
+app.use('/users', ensureAuth, usersRoute);
+app.use('/dms', ensureAuth, dmsRoute);
+app.use('/groups', ensureAuth, groupsRoute);
+app.use('/community/centers/cc', ensureAuth, ccsRoute);
+app.use('/community/centers/rooms', ensureAuth, roomsRoute);
 
-app.get('/messages/get/:dm_name', (req, res) => {
-    let messages = JSON.parse(fs.readFileSync('messages.json').toString()).filter(i => {return (i.username == req.params.dm_name && i.to == req.user.username) || (i.to == req.params.dm_name && i.username == req.user.username)});
-    res.json(messages);
-});
+// // 40x status handling
 
-app.get('/users/get', (req, res) => {
-    let users = JSON.parse(fs.readFileSync('users.json').toString()).filter(i => {return i.username != req.user.username});
-    res.json(users);
-});
+// app.use((req, res, next) => {
+//     res.status(403).type('text').send('Forbidden');
+//     next();
+// });
 
-app.post('/cookie/get', (req, res) => {
-    res.cookie('username', req.body.username, { maxAge: 99999999999 * 60 * 24, httpOnly: true });
-    fs.readFile('users.json', (err, data) => {
-        var db = JSON.parse(data.toString());
-        var userExists = false;
-        for (let i in db) {
-            if (db[i].username == req.body.username) {
-                userExists = true;
-                break;
-            }
-        }
-        if (!userExists) {
-            db.push({
-                username: req.body.username
-            });
-            fs.writeFileSync('users.json', JSON.stringify(db));
-        }
-        res.send('success');
-    });
-});
+// app.use((req, res, next) => {
+//     res.status(404).type('text').send('Resource/Page Not Found');
+//     next();
+// });
 
-app.get('/community/centers', (req, res) => {
-    res.render('ccs');
-});
+// // Server Error Handling
 
-app.get('/community/centers/cc/:cc_name', (req, res) => {
-    res.render('cc_page', {cc_name: req.params.cc_name});
-});
+// app.use((error, req, res, next) => {
+//     res.status(500).send('Internal Server Error!');
+//     console.log(error);
+//     next();
+// });
 
-app.get('/community/centers/cc/:cc_name/:room_name', (req, res) => {
-    res.render('room', {cc_name: req.params.cc_name, room_name: req.params.room_name});
-});
-
-app.get('/community/centers/cc/:cc_name/:room_name/messages/get', (req, res) => {
-    let messages = JSON.parse(fs.readFileSync('cc_messages.json').toString()).filter(i => {return i.toCc == req.params.cc_name && i.toRoom == req.params.room_name});
-    res.json(messages);
-});
-
-app.get('/community/centers/data/get', (req, res) => {
-    let ccs = JSON.parse(fs.readFileSync('ccs.json').toString());
-    res.json(ccs);
-});
-
-app.get('/community/centers/cc/:cc_name/data/rooms/get', (req, res) => {
-    let rooms = JSON.parse(fs.readFileSync('ccs.json').toString()).filter(i => {return i.name == req.params.cc_name})[0];
-    res.json(rooms);
-});
-
-app.post('/community/centers/new/create', (req, res) => {
-    fs.readFile('ccs.json', (err, data) => {
-        var db = JSON.parse(data.toString());
-        var ccExists = false;
-        for (let i in db) {
-            if (db[i].name == req.body.cc_name) {
-                ccExists = true;
-                break;
-            }
-        }
-        if (!ccExists) {
-            db.push({
-                name: req.body.cc_name,
-                rooms: []
-            });
-            fs.writeFileSync('ccs.json', JSON.stringify(db));
-            res.send('success');
-        } else {
-            res.send('exists');
-        }
-    });
-});
-
-app.post('/community/centers/rooms/create', (req, res) => {
-    fs.readFile('ccs.json', (err, data) => {
-        var db = JSON.parse(data.toString());
-        var channelExists = false;
-        var temp = 0;
-        for (let i in db) {
-            if (db[i].name == req.body.cc_name) {
-                temp = i;
-                for (let j in db[i].rooms) {
-                    if (db[i].rooms[j].name == req.body.room_name) {
-                        console.log(db[i].rooms[j].name);
-                        channelExists = true;
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-        if (!channelExists) {
-            db[temp].rooms.push({
-                name: req.body.room_name
-            });
-            fs.writeFileSync('ccs.json', JSON.stringify(db));
-            res.send('success');
-        } else {
-            res.send('exists');
-        }
-    });
-});
-
-app.delete('/community/centers/data/delete', (req, res) => {
-    fs.readFile('ccs.json', (err, data) => {
-        var db = JSON.parse(data.toString());
-        for (let i in db) {
-            if (db[i].name == req.body.cc_name) {
-                db.splice(i,1);
-                break;
-            }
-        }
-        fs.writeFileSync('ccs.json', JSON.stringify(db));
-    });
-    fs.readFile('cc_messages.json', (err, data) => {
-        var db = JSON.parse(data.toString());
-        for (let i = 0; i < db.length; i++) {
-            if (db[i].toCc == req.body.cc_name) {
-                db.splice(i,1);
-                i--;
-            }
-        }
-        fs.writeFileSync('cc_messages.json', JSON.stringify(db));
-    });
-    res.send('success');
-});
-
-app.delete('/community/centers/rooms/delete', (req, res) => {
-    fs.readFile('ccs.json', (err, data) => {
-        var db = JSON.parse(data.toString());
-        for (let i in db) {
-            if (db[i].name == req.body.cc_name) {
-                for (let j in db[i].rooms) {
-                    if (db[i].rooms[j].name == req.body.room_name) {
-                        db[i].rooms.splice(j,1);
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-        fs.writeFileSync('ccs.json', JSON.stringify(db));
-    });
-    fs.readFile('cc_messages.json', (err, data) => {
-        var db = JSON.parse(data.toString());
-        for (let i = 0; i < db.length; i++) {
-            if (db[i].toCc == req.body.cc_name && db[i].toRoom == req.body.room_name) {
-                db.splice(i,1);
-                i--;
-            }
-        }
-        fs.writeFileSync('cc_messages.json', JSON.stringify(db));
-    });
-    res.send('success');
-});
+// app.post('/cookie/get', (req, res) => {
+//     res.cookie('username', req.body.username, { maxAge: 99999999999 * 60 * 24, httpOnly: true });
+//     fs.readFile('users.json', (err, data) => {
+//         var db = JSON.parse(data.toString());
+//         var userExists = false;
+//         for (let i in db) {
+//             if (db[i].username == req.body.username) {
+//                 userExists = true;
+//                 break;
+//             }
+//         }
+//         if (!userExists) {
+//             db.push({
+//                 username: req.body.username
+//             });
+//             fs.writeFileSync('users.json', JSON.stringify(db));
+//         }
+//         res.send('success');
+//     });
+// });
 
 const PORT = process.env.PORT;
 http.listen(PORT, () => {

@@ -1,7 +1,7 @@
-module.exports = (io) => {
+module.exports = (io, CC, DM) => {
     function makeDmName(socket, message) {
-        let username = socket.request.user.username;
-        let to = message.dmName;
+        let username = socket.request.user._id;
+        let to = message.dmId;
         let first = [username, to].sort(function(a, b){
             if(a < b) { return -1; }
             if(a > b) { return 1; }
@@ -16,7 +16,7 @@ module.exports = (io) => {
     }
 
     function makeRoomName(message) {
-        return message.cc_name + '-' + message.room_name;
+        return message.cc_id + '-' + message.room_id;
     }
 
     io.on('connection', socket => {
@@ -29,41 +29,60 @@ module.exports = (io) => {
             console.log(makeRoomName(message));
         });
         socket.on('dm message', message => {
-            let username = socket.request.user.username;
-            let to = message.dmName;
+            let user_id = socket.request.user._id;
+            let to = message.dmId;
             let msg = message.message;
-            fs.readFile('messages.json', (err, data) => {
-                let db = JSON.parse(data.toString());
-                db.push({
-                    username: username,
+            DM.findOne({
+                $or: [
+                    {
+                        members: [ user_id, to ]
+                    },
+                    {
+                        members: [ to, user_id ]
+                    }
+                ]
+            }).then(cc => {
+                let newMessage = cc.messages.create({
+                    username: user_id,
                     message: msg,
+                    edited: false,
                     to: to
                 });
-                io.in(makeDmName(socket, message)).emit('dm message', {
-                    message: msg,
-                    username: username
+                cc.messages.push(newMessage);
+                cc.save().then(doc => {
+                    io.in(makeDmName(socket, message)).emit('dm message', {
+                        username: socket.request.user.username,
+                        message: msg
+                    });
                 });
-                fs.writeFileSync('messages.json', JSON.stringify(db));
             });
         });
         socket.on('room message', message => {
-            let username = socket.request.user.username;
-            let toCc = message.cc_name;
-            let toRoom = message.room_name;
+            let username = socket.request.user._id;
+            let toCc = message.cc_id;
+            let toRoom = message.room_id;
             let msg = message.message;
-            fs.readFile('cc_messages.json', (err, data) => {
-                let db = JSON.parse(data.toString());
-                db.push({
-                    username: username,
-                    message: msg,
-                    toCc: toCc,
-                    toRoom: toRoom
-                });
-                io.in(makeRoomName(message)).emit('room message', {
-                    message: msg,
-                    username: username
-                });
-                fs.writeFileSync('cc_messages.json', JSON.stringify(db));
+            CC.findById(toCc).then(cc => {
+                for (let i in cc.rooms) {
+                    if (cc.rooms[i]._id == toRoom) {
+                        let newMessage = cc.rooms[i].messages.create({
+                            username: username,
+                            edited: false,
+                            message: msg,
+                            toCc: toCc,
+                            toRoom: toRoom
+                        });
+                        cc.rooms[i].messages.push(newMessage);
+                        cc.save().then(doc => {
+                            io.in(makeRoomName(message)).emit('room message', {
+                                username: socket.request.user.username,
+                                message: msg
+                            });
+                        }).catch(err => {
+                            console.log(err);
+                        });
+                    }
+                }
             });
         });
     });
