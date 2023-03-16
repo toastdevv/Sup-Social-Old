@@ -149,6 +149,10 @@ app.use('/groups', ensureAuth, groupsRoute);
 app.use('/community/centers/cc', ensureAuth, ccsRoute);
 app.use('/community/centers/rooms', ensureAuth, roomsRoute);
 
+app.get('/test', (req, res) => {
+    res.render('test');
+});
+
 // // 40x status handling
 
 // app.use((req, res, next) => {
