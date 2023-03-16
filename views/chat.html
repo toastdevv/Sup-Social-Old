@@ -8,15 +8,20 @@
     <title>Sup Development Project - Chat</title>
 </head>
 <script src="/socket.io/socket.io.js"></script>
+<script defer src="/public/scripts/dms.js"></script>
 <script defer src="/public/scripts/chat.js"></script>
 <body>
+    <h1>{username}</h1>
     <div id="container">
-        <h1>{username}</h1>
-        <div id="messages-container"></div>
-        <form id="message-form">
-            <input type="text" name="message" id="message-field" placeholder="Enter message">
-            <button type="submit">Send!</button>
-        </form>
+        <div id="dms">
+        </div>
+        <div id="msgs">
+            <div id="messages-container"></div>
+            <form id="message-form">
+                <input type="text" name="message" id="message-field" placeholder="Enter message">
+                <button type="submit">Send!</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
