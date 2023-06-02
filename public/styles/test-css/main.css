@@ -1,0 +1,37 @@
+body {
+    margin: 0;
+    font-family: 'Sono', sans-serif;
+    /* background: radial-gradient(circle at bottom left, rgb(122, 150, 209), rgb(133, 75, 240), rgb(209, 135, 122)); */
+    height: 100dvh;
+    width: 100%;
+}
+
+nav {
+    height: 3.5rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.row {
+    flex-direction: row;
+}
+
+.center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.space-between {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.space-evenly {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+}

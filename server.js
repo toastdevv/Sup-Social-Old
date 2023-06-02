@@ -91,7 +91,7 @@ function onAuthorizeFail(data, message, error, accept) {
 
 app.use((req, res, next) => {
     let date = new Date();
-    console.log(`${date.getHours()}:${date.getMinutes()}:${date.getSeconds()} ${req.ip} - ${req.method} ${req.path}`);
+    console.log(`${date.getHours()}:${date.getMinutes()}:${date.getSeconds()} ${req.ip.replace("::ffff:", '')} - ${req.method} ${req.path}`);
     next();
 });
 

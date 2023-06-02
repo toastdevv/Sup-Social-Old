@@ -1,0 +1,122 @@
+main {
+    height: calc(100% - 56px);
+    width: 100%;
+}
+
+#side-bar {
+    height: 100%;
+    width: 22%;
+    background-color: aqua;
+}
+
+#chat {
+    height: 100%;
+    width: 78%;
+    background-color: blue;
+}
+
+
+#side-search-bar {
+    height: 2.3rem;
+    margin: 0.7rem 0;
+    /* margin-left: 0.7rem; */
+    width: 90%;
+}
+
+#side-search-field {
+    position: relative;
+    width: 80%;
+    height: 100%;
+    margin: 0.3rem;
+    padding: 0 0.8rem;
+    border: 1px solid black;
+    border-radius: 3rem;
+    font-size: 1rem;
+}
+
+#side-search-field::placeholder {
+    margin-left: 10px;
+    font-size: 1rem;
+}
+
+#side-search-btn {
+    all: unset;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20%;
+    height: 100%;
+    font-size: 1.4rem;
+}
+
+#side-search-btn:hover {
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+#dms-groups-switch {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+#dms-groups-switch-container {
+    width: 80%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.switch-btn {
+    all: unset;
+    cursor: pointer;
+    padding: 7px 0;
+    width: 60%;
+    text-align: center;
+    /* background-color: rgba(255, 255, 255, 0.6); */
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.switch-btn:hover {
+    backdrop-filter: brightness(90%);
+}
+
+.switch-btn:active {
+    backdrop-filter: brightness(80%);
+}
+
+#dms-switch-btn {
+    border-right: 1px solid rgba(0, 0, 0, 0.4);;
+    border-radius: 1rem 0 0 1rem;
+}
+
+#groups-switch-btn {
+    border-left: 1px solid rgba(0, 0, 0, 0.4);;
+    border-radius: 0 1rem 1rem 0;
+}
+
+
+#dms-list {
+    width: 100%;
+    height: calc(100% - 59.175px - 34.318px - 3rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#dms-container {
+    width: 95%;
+    height: 95%;
+    
+}
+
+
+#app-nav {
+    height: 3rem;
+    width: 100%;
+    background-color: blueviolet;
+}

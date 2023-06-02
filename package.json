@@ -1,7 +1,6 @@
 {
   "name": "sup-social",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -28,5 +27,18 @@
     "passport.socketio": "^3.7.0",
     "socket.io": "^4.6.1",
     "socket.io-cookie-parser": "^1.0.0"
-  }
+  },
+  "directories": {
+    "doc": "docs"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YLTN/Sup-Social.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YLTN/Sup-Social/issues"
+  },
+  "homepage": "https://github.com/YLTN/Sup-Social#readme",
+  "description": ""
 }
