@@ -30,7 +30,7 @@ module.exports = (User) => {
                         });
 
                         newUser.save().then(doc => {
-                            res.redirect('/dms');
+                            res.redirect('/login');
                             next(null, doc);
                         }).catch(err => {
                             console.log(err);
